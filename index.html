@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriTrack</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     NAVIGATION
+══════════════════════════════════════════ -->
+<nav>
+  <button class="tab active" data-page="dashboard">Dashboard</button>
+  <button class="tab" data-page="log">Daily Log</button>
+  <button class="tab" data-page="macros">Macros</button>
+  <button class="tab" data-page="meal">Meal Planner</button>
+  <button class="tab" data-page="compare">Compare</button>
+  <button class="tab" data-page="body">Body Stats</button>
+  <button class="tab" data-page="weight">Weight</button>
+  <button class="tab" data-page="sleep">Sleep</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════
+     1. DASHBOARD
+══════════════════════════════════════════ -->
+<div id="page-dashboard" class="page active">
+  <div class="ptitle">Dashboard</div>
+  <div class="psub" id="dash-date-sub">Loading...</div>
+
+  <div class="g4" style="margin-bottom: 12px;">
+    <div class="stat"><div class="stat-val c-accent" id="d-cal">0</div><div class="stat-label">kcal today</div></div>
+    <div class="stat"><div class="stat-val c-protein" id="d-p">0g</div><div class="stat-label">Protein</div></div>
+    <div class="stat"><div class="stat-val c-carbs" id="d-c">0g</div><div class="stat-label">Carbs</div></div>
+    <div class="stat"><div class="stat-val c-fat" id="d-f">0g</div><div class="stat-label">Fat</div></div>
+  </div>
+
+  <div class="g2" style="margin-bottom: 16px;">
+    <div class="stat"><div class="stat-val c-purple" id="d-sleep">—</div><div class="stat-label">Sleep last night</div></div>
+    <div class="stat"><div class="stat-val c-blue" id="d-weight">—</div><div class="stat-label">Latest weight</div></div>
+  </div>
+
+  <!-- Progress vs targets -->
+  <div class="card" id="dash-progress-card" style="display:none;">
+    <div class="sec-label" style="margin-bottom:14px;">Progress vs targets</div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Calories</span><span class="mval c-accent" id="dp-cal-txt">—</span></div>
+      <div class="bar-bg"><div class="bar-fill bg-accent" id="dp-cal-bar" style="width:0%"></div></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Protein</span><span class="mval c-protein" id="dp-p-txt">—</span></div>
+      <div class="bar-bg"><div class="bar-fill bg-protein" id="dp-p-bar" style="width:0%"></div></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Carbs</span><span class="mval c-carbs" id="dp-c-txt">—</span></div>
+      <div class="bar-bg"><div class="bar-fill bg-carbs" id="dp-c-bar" style="width:0%"></div></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Fat</span><span class="mval c-fat" id="dp-f-txt">—</span></div>
+      <div class="bar-bg"><div class="bar-fill bg-fat" id="dp-f-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- No targets yet -->
+  <div class="card" id="dash-no-target" style="text-align:center;padding:28px;">
+    <div style="font-size:13px;color:var(--t2);margin-bottom:12px;">Set your macro targets to unlock progress tracking</div>
+    <button class="btn btn-sm" onclick="navTo('macros')">Calculate my macros</button>
+  </div>
+
+  <!-- Today's meals preview -->
+  <div style="margin-top:20px;">
+    <div class="sec-label">Today's meals</div>
+    <div class="card" id="dash-meals-preview">
+      <div class="empty"><div class="empty-big">EMPTY</div>Nothing logged yet</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     2. DAILY LOG
+══════════════════════════════════════════ -->
+<div id="page-log" class="page">
+  <div class="ptitle">Daily Log</div>
+  <div class="psub">Search 400,000+ real foods via USDA or add manually</div>
+
+
+  <!-- Add food -->
+  <div class="card">
+    <div class="sec-label">Search USDA database</div>
+    <div class="search-wrap">
+      <input type="text" id="food-search" placeholder="e.g. chicken breast, brown rice, banana..." autocomplete="off">
+      <div class="search-drop" id="search-drop"></div>
+    </div>
+
+    <hr>
+
+    <div class="sec-label">Or add manually</div>
+    <div class="g2">
+      <div><label>Food name</label><input type="text" id="log-name" placeholder="e.g. Homemade dal"></div>
+      <div><label>Serving (g)</label><input type="number" id="log-serving" placeholder="100"></div>
+    </div>
+    <div class="g4" style="margin-top:10px;">
+      <div><label>Calories</label><input type="number" id="log-cal" placeholder="0"></div>
+      <div><label>Protein g</label><input type="number" id="log-p" placeholder="0"></div>
+      <div><label>Carbs g</label><input type="number" id="log-c" placeholder="0"></div>
+      <div><label>Fat g</label><input type="number" id="log-f" placeholder="0"></div>
+    </div>
+    <button class="btn btn-sm" style="margin-top:14px;" onclick="addToLog()">+ Add to log</button>
+  </div>
+
+  <div id="log-list"></div>
+
+  <div id="log-totals" class="result">
+    <div class="sec-label" style="margin-bottom:12px;">Today's totals</div>
+    <div class="g4">
+      <div class="stat"><div class="stat-val c-accent" id="t-cal">0</div><div class="stat-label">kcal</div></div>
+      <div class="stat"><div class="stat-val c-protein" id="t-p">0g</div><div class="stat-label">Protein</div></div>
+      <div class="stat"><div class="stat-val c-carbs" id="t-c">0g</div><div class="stat-label">Carbs</div></div>
+      <div class="stat"><div class="stat-val c-fat" id="t-f">0g</div><div class="stat-label">Fat</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     3. MACRO CALCULATOR
+══════════════════════════════════════════ -->
+<div id="page-macros" class="page">
+  <div class="ptitle">Macro Calculator</div>
+  <div class="psub">Personalized targets via Mifflin-St Jeor formula</div>
+
+  <div class="card">
+    <div class="g2">
+      <div><label>Age</label><input type="number" id="m-age" placeholder="22" min="10" max="100"></div>
+      <div>
+        <label>Sex</label>
+        <select id="m-sex"><option value="male">Male</option><option value="female">Female</option></select>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <label>Weight</label>
+        <div class="irow">
+          <input type="number" id="m-weight" placeholder="70">
+          <select id="m-wunit" class="flex-none" style="width:68px;"><option>kg</option><option>lbs</option></select>
+        </div>
+      </div>
+      <div>
+        <label>Height</label>
+        <div class="irow">
+          <input type="number" id="m-height" placeholder="175">
+          <select id="m-hunit" class="flex-none" style="width:68px;"><option>cm</option><option>in</option></select>
+        </div>
+      </div>
+    </div>
+    <label>Activity Level</label>
+    <select id="m-activity">
+      <option value="1.2">Sedentary — desk job, little exercise</option>
+      <option value="1.375">Lightly active — 1-3 days/week</option>
+      <option value="1.55" selected>Moderately active — 3-5 days/week</option>
+      <option value="1.725">Very active — 6-7 days/week</option>
+      <option value="1.9">Extra active — physical job + daily training</option>
+    </select>
+    <label>Goal</label>
+    <select id="m-goal">
+      <option value="cut">Cut — lose fat</option>
+      <option value="maintain" selected>Maintain — stay at weight</option>
+      <option value="bulk">Bulk — build muscle</option>
+    </select>
+    <button class="btn" onclick="calcMacros()">Calculate targets</button>
+  </div>
+
+  <div id="macro-result" class="result">
+    <div class="g4" style="margin-bottom:20px;">
+      <div class="stat"><div class="stat-val c-accent" id="r-cal">—</div><div class="stat-label">Calories</div></div>
+      <div class="stat"><div class="stat-val c-protein" id="r-protein">—</div><div class="stat-label">Protein g</div></div>
+      <div class="stat"><div class="stat-val c-carbs" id="r-carbs">—</div><div class="stat-label">Carbs g</div></div>
+      <div class="stat"><div class="stat-val c-fat" id="r-fat">—</div><div class="stat-label">Fat g</div></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Protein</span><span class="mval c-protein" id="b-protein">0%</span></div>
+      <div class="bar-bg"><div class="bar-fill bg-protein" id="bar-protein" style="width:0%"></div></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Carbohydrates</span><span class="mval c-carbs" id="b-carbs">0%</span></div>
+      <div class="bar-bg"><div class="bar-fill bg-carbs" id="bar-carbs" style="width:0%"></div></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Fat</span><span class="mval c-fat" id="b-fat">0%</span></div>
+      <div class="bar-bg"><div class="bar-fill bg-fat" id="bar-fat" style="width:0%"></div></div>
+    </div>
+    <hr>
+    <div style="font-size:12px;color:var(--t2);line-height:1.9;" id="r-note"></div>
+    <div class="row-btn">
+      <button class="btn btn-sm" onclick="saveTargets()">Save as my targets</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     4. MEAL PLANNER
+══════════════════════════════════════════ -->
+<div id="page-meal" class="page">
+  <div class="ptitle">Meal Planner</div>
+  <div class="psub">Plan breakfast, lunch, dinner and snacks for the week</div>
+
+  <!-- Day tabs -->
+  <div class="toggle-row" id="day-selector"></div>
+
+  <!-- Add food to a meal -->
+  <div class="card">
+    <div class="g2">
+      <div>
+        <label>Meal</label>
+        <select id="mp-meal-select">
+          <option>Breakfast</option>
+          <option>Lunch</option>
+          <option>Dinner</option>
+          <option>Snacks</option>
+        </select>
+      </div>
+      <div>
+        <label>Search food</label>
+        <div class="search-wrap">
+          <input type="text" id="mp-search" placeholder="Search USDA..." autocomplete="off">
+          <div class="search-drop" id="mp-search-drop"></div>
+        </div>
+      </div>
+    </div>
+    <div class="g2" style="margin-top:10px;">
+      <div><label>Food name</label><input type="text" id="mp-food-name" placeholder="e.g. Oats"></div>
+      <div><label>Serving (g)</label><input type="number" id="mp-food-serving" placeholder="100"></div>
+    </div>
+    <div class="g4" style="margin-top:10px;">
+      <div><label>Calories</label><input type="number" id="mp-food-cal" placeholder="0"></div>
+      <div><label>Protein g</label><input type="number" id="mp-food-p" placeholder="0"></div>
+      <div><label>Carbs g</label><input type="number" id="mp-food-c" placeholder="0"></div>
+      <div><label>Fat g</label><input type="number" id="mp-food-f" placeholder="0"></div>
+    </div>
+    <button class="btn btn-sm" style="margin-top:14px;" onclick="addMealFood()">+ Add to meal</button>
+  </div>
+
+  <div id="meal-day-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     5. COMPARE FOODS
+══════════════════════════════════════════ -->
+<div id="page-compare" class="page">
+  <div class="ptitle">Compare Foods</div>
+  <div class="psub">Side-by-side macro breakdown — up to 8 items</div>
+
+  <div class="card">
+    <div class="sec-label">Search food</div>
+    <div class="search-wrap">
+      <input type="text" id="cmp-search" placeholder="Search USDA database..." autocomplete="off">
+      <div class="search-drop" id="cmp-search-drop"></div>
+    </div>
+    <hr>
+    <div class="sec-label">Or add manually</div>
+    <div class="g2">
+      <div><label>Food name</label><input type="text" id="cmp-name" placeholder="e.g. White rice"></div>
+      <div><label>Per (g)</label><input type="number" id="cmp-serving" placeholder="100"></div>
+    </div>
+    <div class="g4" style="margin-top:10px;">
+      <div><label>Calories</label><input type="number" id="cmp-cal" placeholder="0"></div>
+      <div><label>Protein g</label><input type="number" id="cmp-p" placeholder="0"></div>
+      <div><label>Carbs g</label><input type="number" id="cmp-c" placeholder="0"></div>
+      <div><label>Fat g</label><input type="number" id="cmp-f" placeholder="0"></div>
+    </div>
+    <button class="btn btn-sm" style="margin-top:14px;" onclick="addCompare()">+ Add to comparison</button>
+  </div>
+
+  <div id="compare-output">
+    <div class="empty"><div class="empty-big">EMPTY</div>Add 2+ items to compare</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     6. BODY STATS
+══════════════════════════════════════════ -->
+<div id="page-body" class="page">
+  <div class="ptitle">Body Stats</div>
+  <div class="psub">BMI, body fat %, TDEE, and daily water intake</div>
+
+  <div class="toggle-row">
+    <button class="tbtn active" onclick="showBodySec(this,'bs-bmi')">BMI</button>
+    <button class="tbtn" onclick="showBodySec(this,'bs-bf')">Body Fat</button>
+    <button class="tbtn" onclick="showBodySec(this,'bs-tdee')">TDEE</button>
+    <button class="tbtn" onclick="showBodySec(this,'bs-water')">Water</button>
+  </div>
+
+  <!-- BMI -->
+  <div id="bs-bmi" class="body-sec">
+    <div class="card">
+      <div class="g2">
+        <div>
+          <label>Weight</label>
+          <div class="irow">
+            <input type="number" id="bmi-w" placeholder="70">
+            <select id="bmi-wunit" class="flex-none" style="width:68px;"><option>kg</option><option>lbs</option></select>
+          </div>
+        </div>
+        <div>
+          <label>Height</label>
+          <div class="irow">
+            <input type="number" id="bmi-h" placeholder="175">
+            <select id="bmi-hunit" class="flex-none" style="width:68px;"><option>cm</option><option>in</option></select>
+          </div>
+        </div>
+      </div>
+      <button class="btn" onclick="calcBMI()">Calculate BMI</button>
+    </div>
+    <div id="bmi-result" class="result">
+      <div class="result-lbl">Your BMI</div>
+      <div class="result-big" id="bmi-val">—</div>
+      <div style="margin-top:6px;margin-bottom:14px;" id="bmi-tag"></div>
+      <div class="bmi-scale"><div class="bmi-marker" id="bmi-marker" style="left:10%;"></div></div>
+      <div class="bmi-labels"><span>Underweight</span><span>Normal</span><span>Overweight</span><span>Obese</span></div>
+      <div style="font-size:12px;color:var(--t2);margin-top:4px;" id="bmi-note"></div>
+    </div>
+  </div>
+
+  <!-- Body Fat -->
+  <div id="bs-bf" class="body-sec" style="display:none;">
+    <div class="card">
+      <label>Method</label>
+      <select id="bf-method" onchange="toggleBFMethod()">
+        <option value="navy">US Navy (waist + neck + height)</option>
+        <option value="bmi">BMI-based estimate</option>
+      </select>
+      <div id="navy-fields">
+        <label>Sex</label>
+        <select id="bf-sex"><option value="male">Male</option><option value="female">Female</option></select>
+        <div class="g2" style="margin-top:8px;">
+          <div><label>Height (cm)</label><input type="number" id="bf-h" placeholder="175"></div>
+          <div><label>Neck (cm)</label><input type="number" id="bf-neck" placeholder="38"></div>
+        </div>
+        <div class="g2">
+          <div><label>Waist (cm)</label><input type="number" id="bf-waist" placeholder="80"></div>
+          <div><label>Hip (cm) — females only</label><input type="number" id="bf-hip" placeholder="95"></div>
+        </div>
+      </div>
+      <div id="bmi-bf-fields" style="display:none;">
+        <div class="g2" style="margin-top:8px;">
+          <div><label>BMI value</label><input type="number" id="bf-bmi-val" placeholder="22"></div>
+          <div><label>Age</label><input type="number" id="bf-age" placeholder="25"></div>
+        </div>
+        <label>Sex</label>
+        <select id="bf-sex2"><option value="male">Male</option><option value="female">Female</option></select>
+      </div>
+      <button class="btn" onclick="calcBodyFat()">Calculate</button>
+    </div>
+    <div id="bf-result" class="result">
+      <div class="result-lbl">Estimated Body Fat</div>
+      <div class="result-big c-blue" id="bf-val">—</div>
+      <div style="margin-top:6px;" id="bf-tag"></div>
+      <div style="font-size:12px;color:var(--t2);margin-top:10px;" id="bf-note"></div>
+    </div>
+  </div>
+
+  <!-- TDEE -->
+  <div id="bs-tdee" class="body-sec" style="display:none;">
+    <div class="card">
+      <div class="g2">
+        <div><label>Sex</label><select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select></div>
+        <div><label>Age</label><input type="number" id="tdee-age" placeholder="25"></div>
+      </div>
+      <div class="g2">
+        <div><label>Weight (kg)</label><input type="number" id="tdee-w" placeholder="70"></div>
+        <div><label>Height (cm)</label><input type="number" id="tdee-h" placeholder="175"></div>
+      </div>
+      <label>Activity</label>
+      <select id="tdee-act">
+        <option value="1.2">Sedentary</option>
+        <option value="1.375">Light (1-3x/week)</option>
+        <option value="1.55" selected>Moderate (3-5x/week)</option>
+        <option value="1.725">Very active (6-7x/week)</option>
+        <option value="1.9">Extra active</option>
+      </select>
+      <button class="btn" onclick="calcTDEE()">Calculate TDEE</button>
+    </div>
+    <div id="tdee-result" class="result">
+      <div class="result-lbl">Total Daily Energy Expenditure</div>
+      <div class="result-big c-protein" id="tdee-val">—</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:4px;margin-bottom:16px;">kcal / day</div>
+      <hr>
+      <div class="sec-label" style="margin-bottom:12px;">Goal-based targets</div>
+      <div class="g3" id="tdee-goals"></div>
+    </div>
+  </div>
+
+  <!-- Water -->
+  <div id="bs-water" class="body-sec" style="display:none;">
+    <div class="card">
+      <div class="g2">
+        <div><label>Weight (kg)</label><input type="number" id="wtr-w" placeholder="70"></div>
+        <div>
+          <label>Activity</label>
+          <select id="wtr-act">
+            <option value="0">Sedentary</option>
+            <option value="350">Lightly active</option>
+            <option value="700" selected>Moderately active</option>
+            <option value="1000">Very active</option>
+          </select>
+        </div>
+      </div>
+      <label>Climate</label>
+      <select id="wtr-climate">
+        <option value="0">Temperate</option>
+        <option value="250">Hot / humid (+250ml)</option>
+        <option value="-200">Cold (−200ml)</option>
+      </select>
+      <button class="btn" onclick="calcWater()">Calculate</button>
+    </div>
+    <div id="water-result" class="result">
+      <div class="result-lbl">Daily water target</div>
+      <div class="result-big c-blue" id="water-val">—</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:6px;line-height:1.8;" id="water-note"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     7. WEIGHT TRACKER
+══════════════════════════════════════════ -->
+<div id="page-weight" class="page">
+  <div class="ptitle">Weight Tracker</div>
+  <div class="psub">Log your weight and visualize your trend</div>
+
+  <div class="card">
+    <div class="g2">
+      <div>
+        <label>Weight</label>
+        <div class="irow">
+          <input type="number" id="wt-val" placeholder="70.5" step="0.1">
+          <select id="wt-unit" class="flex-none" style="width:68px;"><option>kg</option><option>lbs</option></select>
+        </div>
+      </div>
+      <div><label>Date</label><input type="date" id="wt-date"></div>
+    </div>
+    <div><label>Note (optional)</label><input type="text" id="wt-note" placeholder="e.g. Morning, post-workout..."></div>
+    <button class="btn btn-sm" style="margin-top:14px;" onclick="logWeight()">Log weight</button>
+  </div>
+
+  <!-- Chart + stats (shown when 2+ entries) -->
+  <div id="weight-chart-wrap" style="display:none;">
+    <div class="card">
+      <div class="sec-label" style="margin-bottom:16px;">Trend (last 14 entries)</div>
+      <canvas id="weight-chart" height="140" class="chart-canvas"></canvas>
+    </div>
+    <div class="g3" style="margin-top:0;">
+      <div class="stat"><div class="stat-val c-accent" id="wt-current">—</div><div class="stat-label">Latest</div></div>
+      <div class="stat"><div class="stat-val c-blue" id="wt-avg">—</div><div class="stat-label">7-day avg</div></div>
+      <div class="stat"><div class="stat-val c-green" id="wt-change">—</div><div class="stat-label">Total change</div></div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="sec-label">History</div>
+    <div id="weight-log-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     8. SLEEP TRACKER
+══════════════════════════════════════════ -->
+<div id="page-sleep" class="page">
+  <div class="ptitle">Sleep Tracker</div>
+  <div class="psub">Log your sleep and spot weekly patterns</div>
+
+  <div class="card">
+    <div class="g2">
+      <div><label>Date</label><input type="date" id="sl-date"></div>
+      <div><label>Hours slept</label><input type="number" id="sl-hours" placeholder="7.5" step="0.5" min="0" max="24"></div>
+    </div>
+    <div class="g2">
+      <div>
+        <label>Quality</label>
+        <select id="sl-quality">
+          <option value="5">Excellent</option>
+          <option value="4">Good</option>
+          <option value="3" selected>Average</option>
+          <option value="2">Poor</option>
+          <option value="1">Terrible</option>
+        </select>
+      </div>
+      <div><label>Note (optional)</label><input type="text" id="sl-note" placeholder="e.g. Woke up twice"></div>
+    </div>
+    <button class="btn btn-sm" style="margin-top:14px;" onclick="logSleep()">Log sleep</button>
+  </div>
+
+  <!-- Chart + stats (shown when 1+ entries) -->
+  <div id="sleep-chart-wrap" style="display:none;">
+    <div class="card">
+      <div class="sec-label" style="margin-bottom:4px;">Last 7 nights</div>
+      <div class="sleep-bars-wrap" id="sleep-bars"></div>
+    </div>
+    <div class="g3">
+      <div class="stat"><div class="stat-val c-purple" id="sl-avg">—</div><div class="stat-label">Avg hours</div></div>
+      <div class="stat"><div class="stat-val c-accent" id="sl-best">—</div><div class="stat-label">Best night</div></div>
+      <div class="stat"><div class="stat-val c-red" id="sl-worst">—</div><div class="stat-label">Worst night</div></div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="sec-label">History</div>
+    <div id="sleep-log-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS — order matters
+══════════════════════════════════════════ -->
+<script src="js/app.js"></script>
+<script src="js/api.js"></script>
+<script src="js/trackers.js"></script>
+<script src="js/calculators.js"></script>
+<script src="js/planner.js"></script>
+
+</body>
+</html>
