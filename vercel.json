@@ -1,3 +1,9 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "api/search.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  }
 }

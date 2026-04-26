@@ -1,52 +1,16 @@
 // ══════════════════════════════════════════════════════════
-// API.JS — USDA FoodData Central search
+// API.JS — Food search via serverless proxy
 // ══════════════════════════════════════════════════════════
 
-const USDA_BASE = 'https://api.nal.usda.gov/fdc/v1/foods/search';
-
-// ── Get stored API key (falls back to DEMO_KEY) ──────────
-function getApiKey() {
-  return localStorage.getItem('usda_api_key') || 'DEMO_KEY';
-}
-
-
-// ── Parse nutrients from USDA food object ────────────────
-function parseNutrient(food, ...ids) {
-  for (const id of ids) {
-    const n = (food.foodNutrients || []).find(
-      x => x.nutrientId === id || x.nutrientNumber === String(id)
-    );
-    if (n && n.value != null) return Math.round(n.value * 10) / 10;
-  }
-  return 0;
-}
-
-// ── Normalize a USDA food object into our format ─────────
-function normalizeFood(f) {
-  return {
-    name:     f.description,
-    brand:    f.brandOwner || f.brandName || '',
-    serving:  f.servingSize || 100,
-    unit:     f.servingSizeUnit || 'g',
-    calories: parseNutrient(f, 1008, 208),
-    protein:  parseNutrient(f, 1003, 203),
-    carbs:    parseNutrient(f, 1005, 205),
-    fat:      parseNutrient(f, 1004, 204),
-    fiber:    parseNutrient(f, 1079, 291),
-  };
-}
-
-// ── Search the USDA API ──────────────────────────────────
+// ── Search via our Vercel serverless function ─────────────
 async function searchUSDA(query) {
-  const key = getApiKey();
-  const url = `${USDA_BASE}?query=${encodeURIComponent(query)}&dataType=Branded,Survey%20(FNDDS),Foundation&pageSize=8&api_key=${key}`;
-  const res  = await fetch(url);
-  if (!res.ok) throw new Error(`USDA API error ${res.status}`);
+  const res  = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+  if (!res.ok) throw new Error(`Search error ${res.status}`);
   const data = await res.json();
-  return (data.foods || []).map(normalizeFood);
+  return data.foods || [];
 }
 
-// ── Render a food result item ────────────────────────────
+// ── Render a single food result row ──────────────────────
 function renderFoodResult(food) {
   return `
     <div class="sri-name">${food.name}</div>
@@ -60,11 +24,10 @@ function renderFoodResult(food) {
     </div>`;
 }
 
-// ── Debounce timers per input ────────────────────────────
+// ── Debounce timers per input ─────────────────────────────
 const _searchTimers = {};
 
-// ── Setup a search input + dropdown ─────────────────────
-// onSelect(food) is called with the normalized food object
+// ── Setup a search input + dropdown ──────────────────────
 function setupSearch(inputId, dropId, onSelect) {
   const inp  = $(inputId);
   const drop = $(dropId);
@@ -97,12 +60,11 @@ function setupSearch(inputId, dropId, onSelect) {
           });
         });
       } catch {
-        drop.innerHTML = '<div class="sri-loading" style="color:var(--red)">Search failed — check API key or network</div>';
+        drop.innerHTML = '<div class="sri-loading" style="color:var(--red)">Search failed — try again</div>';
       }
     }, 420);
   });
 
-  // Close on outside click
   document.addEventListener('click', e => {
     if (!inp.contains(e.target) && !drop.contains(e.target)) {
       drop.classList.remove('open');
