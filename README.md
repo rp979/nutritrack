@@ -19,7 +19,7 @@ NutriTrack is a full-featured personal health and nutrition tracking web app bui
 ## File Structure
 
 ```
-macros-app/
+nutritrack/
 ├── index.html          ← App shell + all tab HTML
 ├── css/
 │   └── style.css       ← All styles and design tokens
